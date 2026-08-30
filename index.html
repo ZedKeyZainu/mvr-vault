@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MVR Vault & Piggy Bank</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: rgba(19, 26, 43, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --amber: #f59e0b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+    .status-pill { font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); color: var(--primary); padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+    
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; backdrop-filter: blur(12px); margin-bottom: 20px; }
+    
+    /* Converter Section */
+    .calc-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; }
+    .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: end; }
+    .calc-results { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+    .res-card { background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; }
+    .res-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
+    .res-card div { font-size: 1.25rem; font-weight: 700; margin-top: 4px; color: #fff; }
+
+    /* Envelopes Grid */
+    .envelope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .envelope-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; position: relative; }
+    .envelope-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
+    .envelope-card h3 { font-size: 1.3rem; font-weight: 800; margin: 8px 0; color: #fff; }
+    .envelope-card .badge { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--muted); }
+
+    /* Forms */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+    input, select { width: 100%; background: #0f172a; border: 1px solid var(--border); padding: 11px 14px; border-radius: 8px; color: var(--text); outline: none; }
+    input:focus, select:focus { border-color: var(--primary); }
+
+    .btn-submit { display: block; width: 100%; background: var(--primary); color: #fff; padding: 13px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .btn-submit:hover { filter: brightness(1.1); }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+    .tag-dep { color: var(--emerald); font-weight: 600; }
+    .tag-exp { color: var(--rose); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div>
+      <h1 style="font-size: 1.4rem; font-weight: 800;">MVR Vault & Envelope Bank</h1>
+      <p style="color: var(--muted); font-size: 0.85rem; margin-top: 2px;">Multi-Fund Budgeting & Live Currency Conversion</p>
+    </div>
+    <div id="syncStatus" class="status-pill">● Connecting...</div>
+  </header>
+
+  <!-- CURRENCY CONVERTER CALCULATOR -->
+  <div class="calc-box">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--muted);">Currency Sub-Calculator (MVR ↔ USD)</span>
+      <span style="font-size: 0.75rem; color: var(--muted);">Editable Real-time Rates</span>
+    </div>
+    <div class="calc-grid">
+      <div>
+        <label>Amount</label>
+        <input type="number" id="calcAmt" value="1000" oninput="calculateForex()">
+      </div>
+      <div>
+        <label>Direction</label>
+        <select id="calcDir" onchange="calculateForex()">
+          <option value="MVR_TO_USD">MVR → USD</option>
+          <option value="USD_TO_MVR">USD → MVR</option>
+        </select>
+      </div>
+      <div>
+        <label>Bank Rate (MVR)</label>
+        <input type="number" step="0.01" id="bankRate" value="15.42" oninput="calculateForex()">
+      </div>
+      <div>
+        <label>Market / Black Market (MVR)</label>
+        <input type="number" step="0.01" id="marketRate" value="23.00" oninput="calculateForex()">
+      </div>
+    </div>
+
+    <div class="calc-results">
+      <div class="res-card">
+        <small>Official Bank Equivalent</small>
+        <div id="bankRes">$0.00</div>
+      </div>
+      <div class="res-card">
+        <small>Market Equivalent (Parallel Rate)</small>
+        <div id="marketRes" style="color: var(--amber);">$0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION TABS -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="setTab('envelopes')">Envelopes & Balances</button>
+    <button class="tab-btn" onclick="setTab('newTx')">Log Transaction</button>
+    <button class="tab-btn" onclick="setTab('history')">Ledger History</button>
+  </div>
+
+  <!-- TAB 1: ENVELOPES -->
+  <div id="envelopesTab" class="tab-content active">
+    <div class="envelope-grid" id="envelopeCards">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <!-- TAB 2: TRANSACTION FORM -->
+  <div id="newTxTab" class="tab-content">
+    <div class="card" style="max-width: 650px; margin: 0 auto;">
+      <form onsubmit="handleTransactionSubmit(event)">
+        <div class="grid-2">
+          <div>
+            <label>Date</label>
+            <input type="date" id="txDate" required>
+          </div>
+          <div>
+            <label>Transaction Type</label>
+            <select id="txType" required>
+              <option value="DEPOSIT">Deposit (IN / Allocation)</option>
+              <option value="EXPENSE">Expense (OUT / Spend)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Main Category</label>
+            <select id="txMainCat" onchange="updateSubCatDropdown()" required>
+              <option value="Self Use">Self Use</option>
+              <option value="Parents">Parents</option>
+              <option value="Savings">Savings</option>
+            </select>
+          </div>
+          <div>
+            <label>Sub-Category</label>
+            <select id="txSubCat" required></select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Amount (MVR)</label>
+            <input type="number" step="0.01" min="0.5" id="txAmount" placeholder="e.g. 250.00" required>
+          </div>
+          <div>
+            <label>Notes / Description</label>
+            <input type="text" id="txNotes" placeholder="e.g. Netflix, BML Card EMI, Allowance">
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmitTx" class="btn-submit">Record Transaction</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TAB 3: LEDGER HISTORY -->
+  <div id="historyTab" class="tab-content">
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Fund / Envelope</th>
+            <th>Amount</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody">
+          <tr><td colspan="5" style="text-align: center; color: var(--muted);">Loading records...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbzlcLdr7TVVHZ1_avjS7ZsKLypoHHjLQ4ubTlnlkzeQY7KuyfwXI4vZJZJXNmJfdmDt/exec";
+
+  const CATEGORY_MAP = {
+    "Self Use": ["Subscriptions", "Loans", "Misc"],
+    "Parents": ["General / Family"],
+    "Savings": ["Emergency Vault"]
+  };
+
+  window.onload = () => {
+    document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+    updateSubCatDropdown();
+    calculateForex();
+    fetchSheetData();
+  };
+
+  function setTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(tabId + 'Tab').classList.add('active');
+  }
+
+  function updateSubCatDropdown() {
+    const main = document.getElementById('txMainCat').value;
+    const subSelect = document.getElementById('txSubCat');
+    subSelect.innerHTML = CATEGORY_MAP[main].map(sub => `<option value="${sub}">${sub}</option>`).join('');
+  }
+
+  function calculateForex() {
+    const amt = parseFloat(document.getElementById('calcAmt').value) || 0;
+    const dir = document.getElementById('calcDir').value;
+    const bankRate = parseFloat(document.getElementById('bankRate').value) || 15.42;
+    const marketRate = parseFloat(document.getElementById('marketRate').value) || 23.00;
+
+    if (dir === "MVR_TO_USD") {
+      const bankUsd = amt / bankRate;
+      const marketUsd = amt / marketRate;
+      document.getElementById('bankRes').innerText = `$${bankUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('marketRes').innerText = `$${marketUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else {
+      const bankMvr = amt * bankRate;
+      const marketMvr = amt * marketRate;
+      document.getElementById('bankRes').innerText = `MVR ${bankMvr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('marketRes').innerText = `MVR ${marketMvr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+  }
+
+  async function fetchSheetData() {
+    const status = document.getElementById('syncStatus');
+    status.innerText = "● Syncing...";
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      renderBalances(data.balances);
+      renderLogs(data.logs);
+      status.innerText = "● Live Connected";
+    } catch (e) {
+      status.innerText = "● Offline Mode";
+      // Demo mock data if no API yet connected
+      renderBalances([
+        { mainCategory: "Self Use", subCategory: "Subscriptions", currentBalance: 450 },
+        { mainCategory: "Self Use", subCategory: "Loans", currentBalance: 1200 },
+        { mainCategory: "Self Use", subCategory: "Misc", currentBalance: 800 },
+        { mainCategory: "Parents", subCategory: "General / Family", currentBalance: 3000 },
+        { mainCategory: "Savings", subCategory: "Emergency Vault", currentBalance: 15000 }
+      ]);
+    }
+  }
+
+  function renderBalances(balances) {
+    const container = document.getElementById('envelopeCards');
+    container.innerHTML = balances.map(b => `
+      <div class="envelope-card">
+        <span class="badge">${b.mainCategory}</span>
+        <div style="margin-top: 8px;"><small>${b.subCategory}</small></div>
+        <h3>MVR ${b.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+      </div>
+    `).join('');
+  }
+
+  function renderLogs(logs) {
+    const tbody = document.getElementById('logTableBody');
+    if (!logs || !logs.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions recorded yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = logs.map(l => `
+      <tr>
+        <td>${l.date}</td>
+        <td><span class="${l.type === 'DEPOSIT' ? 'tag-dep' : 'tag-exp'}">${l.type}</span></td>
+        <td><strong>${l.mainCategory}</strong> <span style="color: var(--muted);">(${l.subCategory})</span></td>
+        <td><strong>MVR ${l.amount.toFixed(2)}</strong></td>
+        <td>${l.notes || '-'}</td>
+      </tr>
+    `).join('');
+  }
+
+  async function handleTransactionSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitTx');
+    btn.innerText = "Logging to Google Sheets...";
+    btn.disabled = true;
+
+    const payload = {
+      date: document.getElementById('txDate').value,
+      type: document.getElementById('txType').value,
+      mainCategory: document.getElementById('txMainCat').value,
+      subCategory: document.getElementById('txSubCat').value,
+      amount: document.getElementById('txAmount').value,
+      notes: document.getElementById('txNotes').value
+    };
+
+    try {
+      await fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      alert("Transaction successfully recorded in MVR!");
+      document.getElementById('txAmount').value = "";
+      document.getElementById('txNotes').value = "";
+      
+      setTimeout(fetchSheetData, 1500);
+      setTab('envelopes');
+    } catch (err) {
+      alert("Submission failed. Check your network or API link.");
+    } finally {
+      btn.innerText = "Record Transaction";
+      btn.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>
