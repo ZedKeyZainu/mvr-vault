@@ -1,33 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Mobile Fullscreen & Web App Capabilities -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MVR Vault">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#090d16">
-  
-  <!-- App Icon (Replace with any image URL you like) -->
-  <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/safe.png">
-  <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/safe.png">
-  
-  <!-- Web App Manifest (Android / Desktop Chrome) -->
-  <link rel="manifest" href="manifest.json">
-  
-  <!-- Mobile Theme Colors -->
-  <meta name="theme-color" content="#090d16">
-  <meta name="mobile-web-app-capable" content="yes">
-  
-  <!-- iOS Safari Native PWA Settings -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MVR Vault">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MVR Vault & Piggy Bank</title>
+  <title>MVR Vault & Multi-User Bank</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -42,68 +22,82 @@
       --muted: #94a3b8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    body { background: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; }
     .container { max-width: 1100px; margin: 0 auto; }
     
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-    .status-pill { font-size: 0.8rem; background: rgba(59, 130, 246, 0.15); color: var(--primary); padding: 4px 10px; border-radius: 20px; font-weight: 600; }
-    
-    .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
-    .tab-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+    /* Auth Modal */
+    #authOverlay { position: fixed; inset: 0; background: rgba(9, 13, 22, 0.95); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .auth-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; text-align: center; }
+
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+    .user-tag { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--primary); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-logout { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; text-decoration: underline; }
+
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; }
+    .tab-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
     .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; backdrop-filter: blur(12px); margin-bottom: 20px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; backdrop-filter: blur(12px); margin-bottom: 20px; }
     
-    /* Converter Section */
-    .calc-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 24px; }
-    .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: end; }
+    /* Forex Converter */
+    .calc-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
     .calc-results { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
-    .res-card { background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; }
-    .res-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
-    .res-card div { font-size: 1.25rem; font-weight: 700; margin-top: 4px; color: #fff; }
+    .res-card { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; }
+    .res-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+    .res-card div { font-size: 1.25rem; font-weight: 800; margin-top: 4px; }
 
-    /* Envelopes Grid */
-    .envelope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
-    .envelope-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; position: relative; }
-    .envelope-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
-    .envelope-card h3 { font-size: 1.3rem; font-weight: 800; margin: 8px 0; color: #fff; }
-    .envelope-card .badge { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); color: var(--muted); }
+    /* Envelopes */
+    .envelope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .envelope-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .envelope-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+    .envelope-card h3 { font-size: 1.3rem; font-weight: 800; margin: 8px 0; }
 
-    /* Forms */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
     label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
     input, select { width: 100%; background: #0f172a; border: 1px solid var(--border); padding: 11px 14px; border-radius: 8px; color: var(--text); outline: none; }
-    input:focus, select:focus { border-color: var(--primary); }
 
-    .btn-submit { display: block; width: 100%; background: var(--primary); color: #fff; padding: 13px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
-    .btn-submit:hover { filter: brightness(1.1); }
-
+    .btn-submit { display: block; width: 100%; background: var(--primary); color: #fff; padding: 13px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+    
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
     th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
-    .tag-dep { color: var(--emerald); font-weight: 600; }
-    .tag-exp { color: var(--rose); font-weight: 600; }
+    .tag-dep { color: var(--emerald); font-weight: 700; }
+    .tag-exp { color: var(--rose); font-weight: 700; }
   </style>
 </head>
 <body>
 
-<div class="container">
+<!-- AUTHENTICATION OVERLAY -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">MVR Vault Login</h2>
+    <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 20px;">Enter your username or ID. Separate accounts get private ledgers.</p>
+    <input type="text" id="usernameInput" placeholder="e.g. zain, friend1, team" style="margin-bottom: 14px; text-align: center;">
+    <button onclick="loginUser()" class="btn-submit">Open Vault</button>
+  </div>
+</div>
+
+<div class="container" id="mainApp" style="display: none;">
   <header>
     <div>
-      <h1 style="font-size: 1.4rem; font-weight: 800;">MVR Vault & Envelope Bank</h1>
-      <p style="color: var(--muted); font-size: 0.85rem; margin-top: 2px;">Multi-Fund Budgeting & Live Currency Conversion</p>
+      <h1 style="font-size: 1.3rem; font-weight: 800;">MVR Vault & Multi-Bank</h1>
+      <div id="syncStatus" style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">● Connecting...</div>
     </div>
-    <div id="syncStatus" class="status-pill">● Connecting...</div>
+    <div class="user-tag">
+      <span>👤 <strong id="displayUsername">User</strong></span>
+      <button onclick="logoutUser()" class="btn-logout">Switch</button>
+    </div>
   </header>
 
-  <!-- CURRENCY CONVERTER CALCULATOR -->
+  <!-- FOREX CALCULATOR -->
   <div class="calc-box">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <span style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--muted);">Currency Sub-Calculator (MVR ↔ USD)</span>
-      <span style="font-size: 0.75rem; color: var(--muted);">Editable Real-time Rates</span>
+      <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--muted);">Forex Sub-Calculator</span>
+      <span style="font-size: 0.75rem; color: var(--muted);">Live Calculation</span>
     </div>
     <div class="calc-grid">
       <div>
@@ -118,18 +112,17 @@
         </select>
       </div>
       <div>
-        <label>Bank Rate (MVR)</label>
+        <label>Bank Rate</label>
         <input type="number" step="0.01" id="bankRate" value="15.42" oninput="calculateForex()">
       </div>
       <div>
-        <label>Market / Black Market (MVR)</label>
+        <label>Market Rate</label>
         <input type="number" step="0.01" id="marketRate" value="23.00" oninput="calculateForex()">
       </div>
     </div>
-
     <div class="calc-results">
       <div class="res-card">
-        <small>Official Bank Equivalent</small>
+        <small>Bank Equivalent (15.42)</small>
         <div id="bankRes">$0.00</div>
       </div>
       <div class="res-card">
@@ -146,16 +139,14 @@
     <button class="tab-btn" onclick="setTab('history')">Ledger History</button>
   </div>
 
-  <!-- TAB 1: ENVELOPES -->
+  <!-- ENVELOPES VIEW -->
   <div id="envelopesTab" class="tab-content active">
-    <div class="envelope-grid" id="envelopeCards">
-      <!-- Injected by JS -->
-    </div>
+    <div class="envelope-grid" id="envelopeCards"></div>
   </div>
 
-  <!-- TAB 2: TRANSACTION FORM -->
+  <!-- TRANSACTION FORM -->
   <div id="newTxTab" class="tab-content">
-    <div class="card" style="max-width: 650px; margin: 0 auto;">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
       <form onsubmit="handleTransactionSubmit(event)">
         <div class="grid-2">
           <div>
@@ -163,17 +154,17 @@
             <input type="date" id="txDate" required>
           </div>
           <div>
-            <label>Transaction Type</label>
+            <label>Type</label>
             <select id="txType" required>
-              <option value="DEPOSIT">Deposit (IN / Allocation)</option>
-              <option value="EXPENSE">Expense (OUT / Spend)</option>
+              <option value="DEPOSIT">Deposit (IN)</option>
+              <option value="EXPENSE">Expense (OUT)</option>
             </select>
           </div>
         </div>
 
         <div class="grid-2">
           <div>
-            <label>Main Category</label>
+            <label>Category</label>
             <select id="txMainCat" onchange="updateSubCatDropdown()" required>
               <option value="Self Use">Self Use</option>
               <option value="Parents">Parents</option>
@@ -189,11 +180,11 @@
         <div class="grid-2">
           <div>
             <label>Amount (MVR)</label>
-            <input type="number" step="0.01" min="0.5" id="txAmount" placeholder="e.g. 250.00" required>
+            <input type="number" step="0.01" min="0.1" id="txAmount" placeholder="0.00" required>
           </div>
           <div>
-            <label>Notes / Description</label>
-            <input type="text" id="txNotes" placeholder="e.g. Netflix, BML Card EMI, Allowance">
+            <label>Notes</label>
+            <input type="text" id="txNotes" placeholder="Description / reference">
           </div>
         </div>
 
@@ -202,7 +193,7 @@
     </div>
   </div>
 
-  <!-- TAB 3: LEDGER HISTORY -->
+  <!-- LEDGER HISTORY VIEW -->
   <div id="historyTab" class="tab-content">
     <div class="card">
       <table>
@@ -210,7 +201,7 @@
           <tr>
             <th>Date</th>
             <th>Type</th>
-            <th>Fund / Envelope</th>
+            <th>Category</th>
             <th>Amount</th>
             <th>Notes</th>
           </tr>
@@ -224,7 +215,7 @@
 </div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbzlcLdr7TVVHZ1_avjS7ZsKLypoHHjLQ4ubTlnlkzeQY7KuyfwXI4vZJZJXNmJfdmDt/exec";
+  const API_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
 
   const CATEGORY_MAP = {
     "Self Use": ["Subscriptions", "Loans", "Misc"],
@@ -232,12 +223,47 @@
     "Savings": ["Emergency Vault"]
   };
 
+  let currentUserId = localStorage.getItem("mvr_vault_user");
+
   window.onload = () => {
-    document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+    // Fix UTC timezone bug: sets local calendar YYYY-MM-DD
+    const now = new Date();
+    const localDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0')
+    ].join('-');
+    
+    document.getElementById('txDate').value = localDate;
     updateSubCatDropdown();
     calculateForex();
-    fetchSheetData();
+
+    if (currentUserId) {
+      bootstrapApp(currentUserId);
+    }
   };
+
+  function loginUser() {
+    const input = document.getElementById("usernameInput").value.trim().toLowerCase();
+    if (!input) return alert("Please enter a username or ID");
+    localStorage.setItem("mvr_vault_user", input);
+    currentUserId = input;
+    bootstrapApp(input);
+  }
+
+  function logoutUser() {
+    localStorage.removeItem("mvr_vault_user");
+    currentUserId = null;
+    document.getElementById("mainApp").style.display = "none";
+    document.getElementById("authOverlay").style.display = "flex";
+  }
+
+  function bootstrapApp(userId) {
+    document.getElementById("authOverlay").style.display = "none";
+    document.getElementById("mainApp").style.display = "block";
+    document.getElementById("displayUsername").innerText = userId;
+    fetchUserData();
+  }
 
   function setTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -249,7 +275,7 @@
   function updateSubCatDropdown() {
     const main = document.getElementById('txMainCat').value;
     const subSelect = document.getElementById('txSubCat');
-    subSelect.innerHTML = CATEGORY_MAP[main].map(sub => `<option value="${sub}">${sub}</option>`).join('');
+    subSelect.innerHTML = CATEGORY_MAP[main].map(s => `<option value="${s}">${s}</option>`).join('');
   }
 
   function calculateForex() {
@@ -259,47 +285,39 @@
     const marketRate = parseFloat(document.getElementById('marketRate').value) || 23.00;
 
     if (dir === "MVR_TO_USD") {
-      const bankUsd = amt / bankRate;
-      const marketUsd = amt / marketRate;
-      document.getElementById('bankRes').innerText = `$${bankUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('marketRes').innerText = `$${marketUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('bankRes').innerText = `$${(amt / bankRate).toFixed(2)}`;
+      document.getElementById('marketRes').innerText = `$${(amt / marketRate).toFixed(2)}`;
     } else {
-      const bankMvr = amt * bankRate;
-      const marketMvr = amt * marketRate;
-      document.getElementById('bankRes').innerText = `MVR ${bankMvr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      document.getElementById('marketRes').innerText = `MVR ${marketMvr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('bankRes').innerText = `MVR ${(amt * bankRate).toFixed(2)}`;
+      document.getElementById('marketRes').innerText = `MVR ${(amt * marketRate).toFixed(2)}`;
     }
   }
 
-  async function fetchSheetData() {
+  async function fetchUserData() {
+    if (!currentUserId) return;
     const status = document.getElementById('syncStatus');
     status.innerText = "● Syncing...";
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(`${API_URL}?userId=${encodeURIComponent(currentUserId)}`);
       const data = await res.json();
       renderBalances(data.balances);
       renderLogs(data.logs);
-      status.innerText = "● Live Connected";
+      status.innerText = "● Connected";
     } catch (e) {
-      status.innerText = "● Offline Mode";
-      // Demo mock data if no API yet connected
-      renderBalances([
-        { mainCategory: "Self Use", subCategory: "Subscriptions", currentBalance: 450 },
-        { mainCategory: "Self Use", subCategory: "Loans", currentBalance: 1200 },
-        { mainCategory: "Self Use", subCategory: "Misc", currentBalance: 800 },
-        { mainCategory: "Parents", subCategory: "General / Family", currentBalance: 3000 },
-        { mainCategory: "Savings", subCategory: "Emergency Vault", currentBalance: 15000 }
-      ]);
+      status.innerText = "● Connection Error";
     }
   }
 
   function renderBalances(balances) {
     const container = document.getElementById('envelopeCards');
+    if (!balances || !balances.length) {
+      container.innerHTML = `<div style="color: var(--muted);">Creating default envelopes for ${currentUserId}...</div>`;
+      return;
+    }
     container.innerHTML = balances.map(b => `
       <div class="envelope-card">
-        <span class="badge">${b.mainCategory}</span>
-        <div style="margin-top: 8px;"><small>${b.subCategory}</small></div>
-        <h3>MVR ${b.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+        <small>${b.mainCategory} · ${b.subCategory}</small>
+        <h3>MVR ${b.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
       </div>
     `).join('');
   }
@@ -307,7 +325,7 @@
   function renderLogs(logs) {
     const tbody = document.getElementById('logTableBody');
     if (!logs || !logs.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions recorded yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions logged yet.</td></tr>`;
       return;
     }
     tbody.innerHTML = logs.map(l => `
@@ -324,10 +342,11 @@
   async function handleTransactionSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitTx');
-    btn.innerText = "Logging to Google Sheets...";
+    btn.innerText = "Saving to Google Sheets...";
     btn.disabled = true;
 
     const payload = {
+      userId: currentUserId,
       date: document.getElementById('txDate').value,
       type: document.getElementById('txType').value,
       mainCategory: document.getElementById('txMainCat').value,
@@ -344,30 +363,24 @@
         body: JSON.stringify(payload)
       });
 
-      alert("Transaction successfully recorded in MVR!");
       document.getElementById('txAmount').value = "";
       document.getElementById('txNotes').value = "";
-      
-      setTimeout(fetchSheetData, 1500);
+      setTimeout(fetchUserData, 1500);
       setTab('envelopes');
     } catch (err) {
-      alert("Submission failed. Check your network or API link.");
+      alert("Failed to submit transaction.");
     } finally {
       btn.innerText = "Record Transaction";
       btn.disabled = false;
-      // Register Service Worker for offline PWA support
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then((registration) => {
-            console.log('ServiceWorker successfully registered with scope:', registration.scope);
-          })
-          .catch((error) => {
-            console.error('ServiceWorker registration failed:', error);
-          });
     }
   }
-</script>
 
+  // Register Service Worker for offline PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
 </body>
 </html>
