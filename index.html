@@ -297,13 +297,21 @@
     if (!currentUserId) return;
     const status = document.getElementById('syncStatus');
     status.innerText = "● Syncing...";
+  
     try {
-      const res = await fetch(`${API_URL}?userId=${encodeURIComponent(currentUserId)}`);
+      const url = `${API_URL}?userId=${encodeURIComponent(currentUserId)}&t=${Date.now()}`;
+      const res = await fetch(url);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP Error: ${res.status}`);
+      }
+  
       const data = await res.json();
       renderBalances(data.balances);
       renderLogs(data.logs);
       status.innerText = "● Connected";
     } catch (e) {
+      console.error("Fetch failed:", e);
       status.innerText = "● Connection Error";
     }
   }
