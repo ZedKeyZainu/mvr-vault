@@ -26,12 +26,12 @@
     .container { max-width: 1100px; margin: 0 auto; }
     
     /* Auth Modal */
-    #authOverlay { position: fixed; inset: 0; background: rgba(9, 13, 22, 0.95); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-    .auth-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; text-align: center; }
+    #authOverlay { position: fixed; inset: 0; background: rgba(9, 13, 22, 0.96); backdrop-filter: blur(14px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .auth-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 380px; text-align: center; }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 12px; }
-    .user-tag { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--primary); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
-    .btn-logout { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; text-decoration: underline; }
+    .user-tag { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--primary); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 10px; }
+    .btn-logout { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
 
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; }
     .tab-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -71,25 +71,31 @@
 </head>
 <body>
 
-<!-- AUTHENTICATION OVERLAY -->
+<!-- AUTHENTICATION OVERLAY (PIN PROTECTED) -->
 <div id="authOverlay">
   <div class="auth-card">
-    <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">MVR Vault Login</h2>
-    <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 20px;">Enter your username or ID. Separate accounts get private ledgers.</p>
-    <input type="text" id="usernameInput" placeholder="e.g. zain, friend1, team" style="margin-bottom: 14px; text-align: center;">
-    <button onclick="loginUser()" class="btn-submit">Open Vault</button>
+    <div style="font-size: 2.2rem; margin-bottom: 8px;">🔐</div>
+    <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 6px;">MVR Vault Access</h2>
+    <p style="color: var(--muted); font-size: 0.82rem; margin-bottom: 20px;">Enter your username and 4-digit PIN to unlock your ledger.</p>
+    
+    <input type="text" id="usernameInput" placeholder="Username (e.g. zain)" style="margin-bottom: 10px; text-align: center;">
+    <input type="password" maxlength="4" pattern="[0-9]*" inputmode="numeric" id="pinInput" placeholder="4-Digit PIN (e.g. 1234)" style="margin-bottom: 14px; text-align: center; letter-spacing: 4px; font-size: 1.2rem;">
+    
+    <div id="authErr" style="color: var(--rose); font-size: 0.8rem; margin-bottom: 12px; display: none;"></div>
+    
+    <button onclick="handleLogin()" id="btnLogin" class="btn-submit">Unlock Vault</button>
   </div>
 </div>
 
 <div class="container" id="mainApp" style="display: none;">
   <header>
     <div>
-      <h1 style="font-size: 1.3rem; font-weight: 800;">MVR Vault & Multi-Bank</h1>
-      <div id="syncStatus" style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">● Connecting...</div>
+      <h1 style="font-size: 1.3rem; font-weight: 800;">MVR Vault & Piggy Bank</h1>
+      <div id="syncStatus" style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">● Live Connected</div>
     </div>
     <div class="user-tag">
       <span>👤 <strong id="displayUsername">User</strong></span>
-      <button onclick="logoutUser()" class="btn-logout">Switch</button>
+      <button onclick="logoutUser()" class="btn-logout">Switch User</button>
     </div>
   </header>
 
@@ -97,7 +103,7 @@
   <div class="calc-box">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--muted);">Forex Sub-Calculator</span>
-      <span style="font-size: 0.75rem; color: var(--muted);">Live Calculation</span>
+      <span style="font-size: 0.75rem; color: var(--muted);">MVR ↔ USD</span>
     </div>
     <div class="calc-grid">
       <div>
@@ -184,7 +190,7 @@
           </div>
           <div>
             <label>Notes</label>
-            <input type="text" id="txNotes" placeholder="Description / reference">
+            <input type="text" id="txNotes" placeholder="Description / purpose">
           </div>
         </div>
 
@@ -193,7 +199,7 @@
     </div>
   </div>
 
-  <!-- LEDGER HISTORY VIEW -->
+  <!-- HISTORY VIEW -->
   <div id="historyTab" class="tab-content">
     <div class="card">
       <table>
@@ -215,6 +221,9 @@
 </div>
 
 <script>
+  // -------------------------------------------------------------
+  // CONFIGURATION: Paste your Google Apps Script URL here
+  // -------------------------------------------------------------
   const API_URL = "https://script.google.com/macros/s/AKfycbzlcLdr7TVVHZ1_avjS7ZsKLypoHHjLQ4ubTlnlkzeQY7KuyfwXI4vZJZJXNmJfdmDt/exec";
 
   const CATEGORY_MAP = {
@@ -223,46 +232,86 @@
     "Savings": ["Emergency Vault"]
   };
 
-  let currentUserId = localStorage.getItem("mvr_vault_user");
+  let activeUser = localStorage.getItem("mvr_user");
+  let activePin = localStorage.getItem("mvr_pin");
 
   window.onload = () => {
-    // Fix UTC timezone bug: sets local calendar YYYY-MM-DD
     const now = new Date();
     const localDate = [
       now.getFullYear(),
       String(now.getMonth() + 1).padStart(2, '0'),
       String(now.getDate()).padStart(2, '0')
     ].join('-');
-    
     document.getElementById('txDate').value = localDate;
+    
     updateSubCatDropdown();
     calculateForex();
 
-    if (currentUserId) {
-      bootstrapApp(currentUserId);
+    if (activeUser && activePin) {
+      validateAndLoad(activeUser, activePin);
     }
   };
 
-  function loginUser() {
-    const input = document.getElementById("usernameInput").value.trim().toLowerCase();
-    if (!input) return alert("Please enter a username or ID");
-    localStorage.setItem("mvr_vault_user", input);
-    currentUserId = input;
-    bootstrapApp(input);
+  async function handleLogin() {
+    const user = document.getElementById("usernameInput").value.trim().toLowerCase();
+    const pin = document.getElementById("pinInput").value.trim();
+    const errDiv = document.getElementById("authErr");
+    const btn = document.getElementById("btnLogin");
+
+    if (!user) return showError("Please enter a username.");
+    if (pin.length !== 4) return showError("PIN must be exactly 4 digits.");
+
+    btn.innerText = "Verifying...";
+    btn.disabled = true;
+    errDiv.style.display = "none";
+
+    await validateAndLoad(user, pin);
+    btn.innerText = "Unlock Vault";
+    btn.disabled = false;
+  }
+
+  function showError(msg) {
+    const err = document.getElementById("authErr");
+    err.innerText = msg;
+    err.style.display = "block";
+  }
+
+  async function validateAndLoad(user, pin) {
+    try {
+      const res = await fetch(`${API_URL}?userId=${encodeURIComponent(user)}&pin=${encodeURIComponent(pin)}&t=${Date.now()}`);
+      const data = await res.json();
+
+      if (data.status === "invalid_pin") {
+        showError("Incorrect 4-digit PIN for this profile.");
+        return;
+      }
+
+      // Save credentials locally
+      localStorage.setItem("mvr_user", user);
+      localStorage.setItem("mvr_pin", pin);
+      activeUser = user;
+      activePin = pin;
+
+      document.getElementById("authOverlay").style.display = "none";
+      document.getElementById("mainApp").style.display = "block";
+      document.getElementById("displayUsername").innerText = user;
+
+      renderBalances(data.balances);
+      renderLogs(data.logs);
+      document.getElementById("syncStatus").innerText = "● Connected";
+    } catch (e) {
+      showError("Connection failed. Verify API URL or network.");
+    }
   }
 
   function logoutUser() {
-    localStorage.removeItem("mvr_vault_user");
-    currentUserId = null;
+    localStorage.removeItem("mvr_user");
+    localStorage.removeItem("mvr_pin");
+    activeUser = null;
+    activePin = null;
     document.getElementById("mainApp").style.display = "none";
     document.getElementById("authOverlay").style.display = "flex";
-  }
-
-  function bootstrapApp(userId) {
-    document.getElementById("authOverlay").style.display = "none";
-    document.getElementById("mainApp").style.display = "block";
-    document.getElementById("displayUsername").innerText = userId;
-    fetchUserData();
+    document.getElementById("pinInput").value = "";
   }
 
   function setTab(tabId) {
@@ -293,33 +342,10 @@
     }
   }
 
-  async function fetchUserData() {
-    if (!currentUserId) return;
-    const status = document.getElementById('syncStatus');
-    status.innerText = "● Syncing...";
-  
-    try {
-      const url = `${API_URL}?userId=${encodeURIComponent(currentUserId)}&t=${Date.now()}`;
-      const res = await fetch(url);
-      
-      if (!res.ok) {
-        throw new Error(`HTTP Error: ${res.status}`);
-      }
-  
-      const data = await res.json();
-      renderBalances(data.balances);
-      renderLogs(data.logs);
-      status.innerText = "● Connected";
-    } catch (e) {
-      console.error("Fetch failed:", e);
-      status.innerText = "● Connection Error";
-    }
-  }
-
   function renderBalances(balances) {
     const container = document.getElementById('envelopeCards');
     if (!balances || !balances.length) {
-      container.innerHTML = `<div style="color: var(--muted);">Creating default envelopes for ${currentUserId}...</div>`;
+      container.innerHTML = `<div style="color: var(--muted);">No envelopes found.</div>`;
       return;
     }
     container.innerHTML = balances.map(b => `
@@ -333,7 +359,7 @@
   function renderLogs(logs) {
     const tbody = document.getElementById('logTableBody');
     if (!logs || !logs.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions logged yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions recorded yet.</td></tr>`;
       return;
     }
     tbody.innerHTML = logs.map(l => `
@@ -350,11 +376,11 @@
   async function handleTransactionSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitTx');
-    btn.innerText = "Saving to Google Sheets...";
+    btn.innerText = "Saving...";
     btn.disabled = true;
 
     const payload = {
-      userId: currentUserId,
+      userId: activeUser,
       date: document.getElementById('txDate').value,
       type: document.getElementById('txType').value,
       mainCategory: document.getElementById('txMainCat').value,
@@ -363,6 +389,7 @@
       notes: document.getElementById('txNotes').value
     };
 
+    // Fixed submission handling to prevent false errors
     try {
       await fetch(API_URL, {
         method: "POST",
@@ -371,23 +398,22 @@
         body: JSON.stringify(payload)
       });
 
+      // Reset Form
       document.getElementById('txAmount').value = "";
       document.getElementById('txNotes').value = "";
-      setTimeout(fetchUserData, 1500);
+      
+      // Auto-refresh balances after Google writes the row
+      setTimeout(() => {
+        validateAndLoad(activeUser, activePin);
+      }, 1200);
+
       setTab('envelopes');
     } catch (err) {
-      alert("Failed to submit transaction.");
+      alert("Network error: Could not reach backend.");
     } finally {
       btn.innerText = "Record Transaction";
       btn.disabled = false;
     }
-  }
-
-  // Register Service Worker for offline PWA
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
-    });
   }
 </script>
 </body>
