@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MVR Vault & Multi-User Bank</title>
+  <title>MVR Vault & Multi-Bank</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#090d16">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,16 +22,25 @@
       --muted: #94a3b8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; }
+    body { background: var(--bg); color: var(--text); padding: 18px; min-height: 100vh; }
     .container { max-width: 1100px; margin: 0 auto; }
     
     /* Auth Modal */
     #authOverlay { position: fixed; inset: 0; background: rgba(9, 13, 22, 0.96); backdrop-filter: blur(14px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
     .auth-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 100%; max-width: 380px; text-align: center; }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 14px; flex-wrap: wrap; gap: 12px; }
     .user-tag { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--primary); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 10px; }
     .btn-logout { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
+
+    /* KPI Summary Stats */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; position: relative; overflow: hidden; }
+    .kpi-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .kpi-card h2 { font-size: 1.55rem; font-weight: 800; margin-top: 6px; }
+    .kpi-total { border-color: rgba(59, 130, 246, 0.4); background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(19, 26, 43, 0.8)); }
+    .kpi-income h2 { color: var(--emerald); }
+    .kpi-expense h2 { color: var(--rose); }
 
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; }
     .tab-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -51,10 +60,12 @@
     .res-card div { font-size: 1.25rem; font-weight: 800; margin-top: 4px; }
 
     /* Envelopes */
-    .envelope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
-    .envelope-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-    .envelope-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
-    .envelope-card h3 { font-size: 1.3rem; font-weight: 800; margin: 8px 0; }
+    .envelope-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .envelope-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; transition: transform 0.15s; }
+    .envelope-card:hover { transform: translateY(-2px); }
+    .envelope-card small { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; font-weight: 700; }
+    .envelope-card h3 { font-size: 1.25rem; font-weight: 800; margin: 8px 0; }
+    .cat-pill { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--muted); margin-bottom: 4px; }
 
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
     label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
@@ -71,18 +82,17 @@
 </head>
 <body>
 
-<!-- AUTHENTICATION OVERLAY (PIN PROTECTED) -->
+<!-- AUTH OVERLAY -->
 <div id="authOverlay">
   <div class="auth-card">
     <div style="font-size: 2.2rem; margin-bottom: 8px;">🔐</div>
-    <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 6px;">MVR Vault Access</h2>
-    <p style="color: var(--muted); font-size: 0.82rem; margin-bottom: 20px;">Enter your username and 4-digit PIN to unlock your ledger.</p>
+    <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 6px;">MVR Vault Login</h2>
+    <p style="color: var(--muted); font-size: 0.82rem; margin-bottom: 20px;">Enter your username and 4-digit PIN.</p>
     
     <input type="text" id="usernameInput" placeholder="Username (e.g. zain)" style="margin-bottom: 10px; text-align: center;">
-    <input type="password" maxlength="4" pattern="[0-9]*" inputmode="numeric" id="pinInput" placeholder="4-Digit PIN (e.g. 1234)" style="margin-bottom: 14px; text-align: center; letter-spacing: 4px; font-size: 1.2rem;">
+    <input type="password" maxlength="4" pattern="[0-9]*" inputmode="numeric" id="pinInput" placeholder="4-Digit PIN" style="margin-bottom: 14px; text-align: center; letter-spacing: 4px; font-size: 1.2rem;">
     
     <div id="authErr" style="color: var(--rose); font-size: 0.8rem; margin-bottom: 12px; display: none;"></div>
-    
     <button onclick="handleLogin()" id="btnLogin" class="btn-submit">Unlock Vault</button>
   </div>
 </div>
@@ -90,14 +100,30 @@
 <div class="container" id="mainApp" style="display: none;">
   <header>
     <div>
-      <h1 style="font-size: 1.3rem; font-weight: 800;">MVR Vault & Piggy Bank</h1>
-      <div id="syncStatus" style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">● Live Connected</div>
+      <h1 style="font-size: 1.3rem; font-weight: 800;">MVR Vault & Multi-Bank</h1>
+      <div id="syncStatus" style="font-size: 0.8rem; color: var(--muted); margin-top: 2px;">● Connected</div>
     </div>
     <div class="user-tag">
       <span>👤 <strong id="displayUsername">User</strong></span>
-      <button onclick="logoutUser()" class="btn-logout">Switch User</button>
+      <button onclick="logoutUser()" class="btn-logout">Switch</button>
     </div>
   </header>
+
+  <!-- KPI SUMMARY STATS -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-total">
+      <small>Total Balance (All Envelopes)</small>
+      <h2 id="kpiTotalBalance">MVR 0.00</h2>
+    </div>
+    <div class="kpi-card kpi-income">
+      <small id="lblIncomeMonth">This Month's Inflows (IN)</small>
+      <h2 id="kpiMonthIncome">+MVR 0.00</h2>
+    </div>
+    <div class="kpi-card kpi-expense">
+      <small id="lblExpenseMonth">This Month's Spending (OUT)</small>
+      <h2 id="kpiMonthExpense">-MVR 0.00</h2>
+    </div>
+  </div>
 
   <!-- FOREX CALCULATOR -->
   <div class="calc-box">
@@ -147,6 +173,7 @@
 
   <!-- ENVELOPES VIEW -->
   <div id="envelopesTab" class="tab-content active">
+    <div style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 12px;">Fund Allocations</div>
     <div class="envelope-grid" id="envelopeCards"></div>
   </div>
 
@@ -162,8 +189,8 @@
           <div>
             <label>Type</label>
             <select id="txType" required>
-              <option value="DEPOSIT">Deposit (IN)</option>
-              <option value="EXPENSE">Expense (OUT)</option>
+              <option value="EXPENSE">Expense (OUT / Spend)</option>
+              <option value="DEPOSIT">Deposit (IN / Allocation)</option>
             </select>
           </div>
         </div>
@@ -171,11 +198,7 @@
         <div class="grid-2">
           <div>
             <label>Category</label>
-            <select id="txMainCat" onchange="updateSubCatDropdown()" required>
-              <option value="Self Use">Self Use</option>
-              <option value="Parents">Parents</option>
-              <option value="Savings">Savings</option>
-            </select>
+            <select id="txMainCat" onchange="updateSubCatDropdown()" required></select>
           </div>
           <div>
             <label>Sub-Category</label>
@@ -190,7 +213,7 @@
           </div>
           <div>
             <label>Notes</label>
-            <input type="text" id="txNotes" placeholder="Description / purpose">
+            <input type="text" id="txNotes" placeholder="Description / recipient">
           </div>
         </div>
 
@@ -221,15 +244,53 @@
 </div>
 
 <script>
-  // -------------------------------------------------------------
-  // CONFIGURATION: Paste your Google Apps Script URL here
-  // -------------------------------------------------------------
   const API_URL = "https://script.google.com/macros/s/AKfycbzlcLdr7TVVHZ1_avjS7ZsKLypoHHjLQ4ubTlnlkzeQY7KuyfwXI4vZJZJXNmJfdmDt/exec";
 
+  // EXPANDED CATEGORIES & SUB-CATEGORIES
   const CATEGORY_MAP = {
-    "Self Use": ["Subscriptions", "Loans", "Misc"],
-    "Parents": ["General / Family"],
-    "Savings": ["Emergency Vault"]
+    "Self Use": [
+      "Subscriptions",
+      "Loans / EMI",
+      "Daily Expenses",
+      "Personal Care & Grooming",
+      "Hobbies & Gaming",
+      "Clothing & Gear"
+    ],
+    "Food & Dining": [
+      "Groceries",
+      "Cafes & Takeout",
+      "Snacks & Drinks",
+      "Restaurant Dining"
+    ],
+    "Parents & Family": [
+      "Family Support",
+      "Home Maintenance",
+      "Parents Allowance",
+      "Family Medical"
+    ],
+    "Savings & Vault": [
+      "Emergency Vault",
+      "Travel Fund",
+      "Big Purchases / Gadgets",
+      "Long-term Investments"
+    ],
+    "Transit & Vehicle": [
+      "Fuel / Petrol",
+      "Vehicle Maintenance & Service",
+      "Ferry / Bus / Taxi",
+      "Parking & Tolls"
+    ],
+    "Bills & Utilities": [
+      "Electricity (STELCO)",
+      "Water (MWSC)",
+      "Internet & Mobile Data (Dhiraagu / Ooredoo)",
+      "Rent"
+    ],
+    "Health & Fitness": [
+      "Gym / Martial Arts",
+      "Supplements & Vitamins",
+      "Pharmacy / Doctor"
+    ]
   };
 
   let activeUser = localStorage.getItem("mvr_user");
@@ -244,13 +305,25 @@
     ].join('-');
     document.getElementById('txDate').value = localDate;
     
-    updateSubCatDropdown();
+    populateCategories();
     calculateForex();
 
     if (activeUser && activePin) {
       validateAndLoad(activeUser, activePin);
     }
   };
+
+  function populateCategories() {
+    const mainSelect = document.getElementById('txMainCat');
+    mainSelect.innerHTML = Object.keys(CATEGORY_MAP).map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    updateSubCatDropdown();
+  }
+
+  function updateSubCatDropdown() {
+    const main = document.getElementById('txMainCat').value;
+    const subSelect = document.getElementById('txSubCat');
+    subSelect.innerHTML = CATEGORY_MAP[main].map(s => `<option value="${s}">${s}</option>`).join('');
+  }
 
   async function handleLogin() {
     const user = document.getElementById("usernameInput").value.trim().toLowerCase();
@@ -286,7 +359,6 @@
         return;
       }
 
-      // Save credentials locally
       localStorage.setItem("mvr_user", user);
       localStorage.setItem("mvr_pin", pin);
       activeUser = user;
@@ -296,8 +368,7 @@
       document.getElementById("mainApp").style.display = "block";
       document.getElementById("displayUsername").innerText = user;
 
-      renderBalances(data.balances);
-      renderLogs(data.logs);
+      renderDashboard(data.balances, data.logs);
       document.getElementById("syncStatus").innerText = "● Connected";
     } catch (e) {
       showError("Connection failed. Verify API URL or network.");
@@ -321,12 +392,6 @@
     document.getElementById(tabId + 'Tab').classList.add('active');
   }
 
-  function updateSubCatDropdown() {
-    const main = document.getElementById('txMainCat').value;
-    const subSelect = document.getElementById('txSubCat');
-    subSelect.innerHTML = CATEGORY_MAP[main].map(s => `<option value="${s}">${s}</option>`).join('');
-  }
-
   function calculateForex() {
     const amt = parseFloat(document.getElementById('calcAmt').value) || 0;
     const dir = document.getElementById('calcDir').value;
@@ -342,35 +407,72 @@
     }
   }
 
-  function renderBalances(balances) {
+  function renderDashboard(balances, logs) {
+    // 1. Calculate Total Net Worth / Balance
+    let totalBalance = 0;
+    if (balances && balances.length) {
+      totalBalance = balances.reduce((sum, b) => sum + (b.currentBalance || 0), 0);
+    }
+    document.getElementById('kpiTotalBalance').innerText = `MVR ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // 2. Calculate Current Month's Income & Expenses
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthLabel = monthNames[now.getMonth()];
+
+    document.getElementById('lblIncomeMonth').innerText = `${monthLabel} Inflows (Deposits)`;
+    document.getElementById('lblExpenseMonth').innerText = `${monthLabel} Spending (Expenses)`;
+
+    let monthIncome = 0;
+    let monthExpense = 0;
+
+    if (logs && logs.length) {
+      logs.forEach(l => {
+        if (l.date && l.date.startsWith(currentYearMonth)) {
+          if (l.type === 'DEPOSIT') {
+            monthIncome += (l.amount || 0);
+          } else if (l.type === 'EXPENSE') {
+            monthExpense += (l.amount || 0);
+          }
+        }
+      });
+    }
+
+    document.getElementById('kpiMonthIncome').innerText = `+MVR ${monthIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('kpiMonthExpense').innerText = `-MVR ${monthExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // 3. Render Envelope Cards
     const container = document.getElementById('envelopeCards');
     if (!balances || !balances.length) {
       container.innerHTML = `<div style="color: var(--muted);">No envelopes found.</div>`;
-      return;
+    } else {
+      container.innerHTML = balances.map(b => `
+        <div class="envelope-card">
+          <span class="cat-pill">${b.mainCategory}</span>
+          <div><small>${b.subCategory}</small></div>
+          <h3 style="color: ${b.currentBalance < 0 ? 'var(--rose)' : '#fff'}">
+            MVR ${b.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </h3>
+        </div>
+      `).join('');
     }
-    container.innerHTML = balances.map(b => `
-      <div class="envelope-card">
-        <small>${b.mainCategory} · ${b.subCategory}</small>
-        <h3>MVR ${b.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-      </div>
-    `).join('');
-  }
 
-  function renderLogs(logs) {
+    // 4. Render Transaction Logs Table
     const tbody = document.getElementById('logTableBody');
     if (!logs || !logs.length) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions recorded yet.</td></tr>`;
-      return;
+    } else {
+      tbody.innerHTML = logs.map(l => `
+        <tr>
+          <td>${l.date}</td>
+          <td><span class="${l.type === 'DEPOSIT' ? 'tag-dep' : 'tag-exp'}">${l.type}</span></td>
+          <td><strong>${l.mainCategory}</strong> <span style="color: var(--muted);">(${l.subCategory})</span></td>
+          <td><strong>MVR ${l.amount.toFixed(2)}</strong></td>
+          <td>${l.notes || '-'}</td>
+        </tr>
+      `).join('');
     }
-    tbody.innerHTML = logs.map(l => `
-      <tr>
-        <td>${l.date}</td>
-        <td><span class="${l.type === 'DEPOSIT' ? 'tag-dep' : 'tag-exp'}">${l.type}</span></td>
-        <td><strong>${l.mainCategory}</strong> <span style="color: var(--muted);">(${l.subCategory})</span></td>
-        <td><strong>MVR ${l.amount.toFixed(2)}</strong></td>
-        <td>${l.notes || '-'}</td>
-      </tr>
-    `).join('');
   }
 
   async function handleTransactionSubmit(e) {
@@ -389,7 +491,6 @@
       notes: document.getElementById('txNotes').value
     };
 
-    // Fixed submission handling to prevent false errors
     try {
       await fetch(API_URL, {
         method: "POST",
@@ -398,11 +499,9 @@
         body: JSON.stringify(payload)
       });
 
-      // Reset Form
       document.getElementById('txAmount').value = "";
       document.getElementById('txNotes').value = "";
       
-      // Auto-refresh balances after Google writes the row
       setTimeout(() => {
         validateAndLoad(activeUser, activePin);
       }, 1200);
