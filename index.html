@@ -18,6 +18,7 @@
       --emerald: #10b981;
       --rose: #f43f5e;
       --amber: #f59e0b;
+      --purple: #8b5cf6;
       --text: #f8fafc;
       --muted: #94a3b8;
     }
@@ -33,9 +34,9 @@
     .user-tag { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--primary); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 10px; }
     .btn-logout { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
 
-    /* KPI Summary Stats */
+    /* Top Stats */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
-    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; position: relative; overflow: hidden; }
+    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; position: relative; }
     .kpi-card small { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
     .kpi-card h2 { font-size: 1.55rem; font-weight: 800; margin-top: 6px; }
     .kpi-total { border-color: rgba(59, 130, 246, 0.4); background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(19, 26, 43, 0.8)); }
@@ -73,6 +74,9 @@
 
     .btn-submit { display: block; width: 100%; background: var(--primary); color: #fff; padding: 13px; border-radius: 8px; border: none; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
     
+    /* Filter Bar */
+    .filter-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
     th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
@@ -112,15 +116,15 @@
   <!-- KPI SUMMARY STATS -->
   <div class="kpi-grid">
     <div class="kpi-card kpi-total">
-      <small>Total Balance (All Envelopes)</small>
+      <small>Total Balance (All Funds)</small>
       <h2 id="kpiTotalBalance">MVR 0.00</h2>
     </div>
     <div class="kpi-card kpi-income">
-      <small id="lblIncomeMonth">This Month's Inflows (IN)</small>
+      <small id="lblIncomeMonth">Inflows</small>
       <h2 id="kpiMonthIncome">+MVR 0.00</h2>
     </div>
     <div class="kpi-card kpi-expense">
-      <small id="lblExpenseMonth">This Month's Spending (OUT)</small>
+      <small id="lblExpenseMonth">Outflows</small>
       <h2 id="kpiMonthExpense">-MVR 0.00</h2>
     </div>
   </div>
@@ -177,9 +181,9 @@
     <div class="envelope-grid" id="envelopeCards"></div>
   </div>
 
-  <!-- TRANSACTION FORM -->
+  <!-- TRANSACTION & ALLOCATION FORM -->
   <div id="newTxTab" class="tab-content">
-    <div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div class="card" style="max-width: 620px; margin: 0 auto;">
       <form onsubmit="handleTransactionSubmit(event)">
         <div class="grid-2">
           <div>
@@ -187,22 +191,53 @@
             <input type="date" id="txDate" required>
           </div>
           <div>
-            <label>Type</label>
-            <select id="txType" required>
+            <label>Movement / Action</label>
+            <select id="txType" onchange="toggleFormFields()" required>
               <option value="EXPENSE">Expense (OUT / Spend)</option>
-              <option value="DEPOSIT">Deposit (IN / Allocation)</option>
+              <option value="DEPOSIT">Deposit (IN / Inflow)</option>
+              <option value="TRANSFER">Transfer (Re-allocate Between Envelopes)</option>
             </select>
           </div>
         </div>
 
-        <div class="grid-2">
-          <div>
-            <label>Category</label>
-            <select id="txMainCat" onchange="updateSubCatDropdown()" required></select>
+        <!-- STANDARD IN/OUT FIELDS -->
+        <div id="standardFields">
+          <div class="grid-2">
+            <div>
+              <label>Category</label>
+              <select id="txMainCat" onchange="updateSubCatDropdown()"></select>
+            </div>
+            <div>
+              <label>Sub-Category</label>
+              <select id="txSubCat"></select>
+            </div>
           </div>
-          <div>
-            <label>Sub-Category</label>
-            <select id="txSubCat" required></select>
+        </div>
+
+        <!-- TRANSFER FIELDS (HIDDEN BY DEFAULT) -->
+        <div id="transferFields" style="display: none; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 14px;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px;">From (Source Envelope):</div>
+          <div class="grid-2">
+            <div>
+              <label>Source Category</label>
+              <select id="fromMainCat" onchange="updateTransferSubCats()"></select>
+            </div>
+            <div>
+              <label>Source Sub-Category</label>
+              <select id="fromSubCat"></select>
+            </div>
+          </div>
+
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--emerald); text-transform: uppercase; margin: 10px 0 8px 0;">To (Destination Envelope):</div>
+          <div class="grid-2">
+            <div>
+              <label>Target Category</label>
+              <select id="toMainCat" onchange="updateTransferSubCats()"></select>
+            </div>
+            <div>
+              <label>Target Sub-Category</label>
+              <select id="toSubCat"></select>
+            </div>
           </div>
         </div>
 
@@ -213,7 +248,7 @@
           </div>
           <div>
             <label>Notes</label>
-            <input type="text" id="txNotes" placeholder="Description / recipient">
+            <input type="text" id="txNotes" placeholder="Purpose or reference">
           </div>
         </div>
 
@@ -225,6 +260,14 @@
   <!-- HISTORY VIEW -->
   <div id="historyTab" class="tab-content">
     <div class="card">
+      <div class="filter-bar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <label style="margin: 0;">Filter Month:</label>
+          <select id="monthFilter" onchange="applyMonthFilter()" style="width: 170px; padding: 8px 12px;"></select>
+        </div>
+        <input type="text" id="searchLog" placeholder="Search notes or category..." onkeyup="filterLogsTable()" style="max-width: 250px; padding: 8px 12px;">
+      </div>
+
       <table>
         <thead>
           <tr>
@@ -246,7 +289,6 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbzlcLdr7TVVHZ1_avjS7ZsKLypoHHjLQ4ubTlnlkzeQY7KuyfwXI4vZJZJXNmJfdmDt/exec";
 
-  // EXPANDED CATEGORIES & SUB-CATEGORIES
   const CATEGORY_MAP = {
     "Self Use": [
       "Subscriptions",
@@ -295,6 +337,8 @@
 
   let activeUser = localStorage.getItem("mvr_user");
   let activePin = localStorage.getItem("mvr_pin");
+  let allBalances = [];
+  let allLogs = [];
 
   window.onload = () => {
     const now = new Date();
@@ -314,15 +358,42 @@
   };
 
   function populateCategories() {
+    const cats = Object.keys(CATEGORY_MAP);
     const mainSelect = document.getElementById('txMainCat');
-    mainSelect.innerHTML = Object.keys(CATEGORY_MAP).map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    const fromSelect = document.getElementById('fromMainCat');
+    const toSelect = document.getElementById('toMainCat');
+    
+    const optionsHtml = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    mainSelect.innerHTML = optionsHtml;
+    fromSelect.innerHTML = optionsHtml;
+    toSelect.innerHTML = optionsHtml;
+    
     updateSubCatDropdown();
+    updateTransferSubCats();
   }
 
   function updateSubCatDropdown() {
     const main = document.getElementById('txMainCat').value;
     const subSelect = document.getElementById('txSubCat');
     subSelect.innerHTML = CATEGORY_MAP[main].map(s => `<option value="${s}">${s}</option>`).join('');
+  }
+
+  function updateTransferSubCats() {
+    const fromMain = document.getElementById('fromMainCat').value;
+    const toMain = document.getElementById('toMainCat').value;
+    document.getElementById('fromSubCat').innerHTML = CATEGORY_MAP[fromMain].map(s => `<option value="${s}">${s}</option>`).join('');
+    document.getElementById('toSubCat').innerHTML = CATEGORY_MAP[toMain].map(s => `<option value="${s}">${s}</option>`).join('');
+  }
+
+  function toggleFormFields() {
+    const type = document.getElementById('txType').value;
+    if (type === 'TRANSFER') {
+      document.getElementById('standardFields').style.display = 'none';
+      document.getElementById('transferFields').style.display = 'block';
+    } else {
+      document.getElementById('standardFields').style.display = 'block';
+      document.getElementById('transferFields').style.display = 'none';
+    }
   }
 
   async function handleLogin() {
@@ -368,7 +439,11 @@
       document.getElementById("mainApp").style.display = "block";
       document.getElementById("displayUsername").innerText = user;
 
-      renderDashboard(data.balances, data.logs);
+      allBalances = data.balances || [];
+      allLogs = data.logs || [];
+
+      buildMonthDropdown(allLogs);
+      renderDashboard();
       document.getElementById("syncStatus").innerText = "● Connected";
     } catch (e) {
       showError("Connection failed. Verify API URL or network.");
@@ -407,47 +482,67 @@
     }
   }
 
-  function renderDashboard(balances, logs) {
-    // 1. Calculate Total Net Worth / Balance
-    let totalBalance = 0;
-    if (balances && balances.length) {
-      totalBalance = balances.reduce((sum, b) => sum + (b.currentBalance || 0), 0);
-    }
+  function buildMonthDropdown(logs) {
+    const select = document.getElementById('monthFilter');
+    const monthsSet = new Set();
+    
+    // Add current month always
+    const now = new Date();
+    const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    monthsSet.add(currentYM);
+
+    logs.forEach(l => {
+      if (l.date && l.date.length >= 7) {
+        monthsSet.add(l.date.substring(0, 7));
+      }
+    });
+
+    const sortedMonths = Array.from(monthsSet).sort().reverse();
+    select.innerHTML = `<option value="ALL">All Time</option>` + sortedMonths.map(ym => {
+      const [y, m] = ym.split('-');
+      const d = new Date(y, parseInt(m) - 1, 1);
+      const label = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      return `<option value="${ym}" ${ym === currentYM ? 'selected' : ''}>${label}</option>`;
+    }).join('');
+  }
+
+  function applyMonthFilter() {
+    renderDashboard();
+  }
+
+  function renderDashboard() {
+    const selectedMonth = document.getElementById('monthFilter').value;
+
+    // 1. Total Balance Across All Envelopes (Always Global Net Worth)
+    let totalBalance = allBalances.reduce((sum, b) => sum + (b.currentBalance || 0), 0);
     document.getElementById('kpiTotalBalance').innerText = `MVR ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // 2. Calculate Current Month's Income & Expenses
-    const now = new Date();
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthLabel = monthNames[now.getMonth()];
-
-    document.getElementById('lblIncomeMonth').innerText = `${monthLabel} Inflows (Deposits)`;
-    document.getElementById('lblExpenseMonth').innerText = `${monthLabel} Spending (Expenses)`;
-
-    let monthIncome = 0;
-    let monthExpense = 0;
-
-    if (logs && logs.length) {
-      logs.forEach(l => {
-        if (l.date && l.date.startsWith(currentYearMonth)) {
-          if (l.type === 'DEPOSIT') {
-            monthIncome += (l.amount || 0);
-          } else if (l.type === 'EXPENSE') {
-            monthExpense += (l.amount || 0);
-          }
-        }
-      });
+    // 2. Filter Logs based on chosen month
+    let filteredLogs = allLogs;
+    if (selectedMonth !== "ALL") {
+      filteredLogs = allLogs.filter(l => l.date && l.date.startsWith(selectedMonth));
     }
 
+    // Update KPI month labels & sums
+    let monthIncome = 0;
+    let monthExpense = 0;
+    filteredLogs.forEach(l => {
+      if (l.type === 'DEPOSIT') monthIncome += (l.amount || 0);
+      else if (l.type === 'EXPENSE') monthExpense += (l.amount || 0);
+    });
+
+    const monthLabel = selectedMonth === "ALL" ? "All Time" : document.getElementById('monthFilter').options[document.getElementById('monthFilter').selectedIndex].text;
+    document.getElementById('lblIncomeMonth').innerText = `${monthLabel} Inflows`;
+    document.getElementById('lblExpenseMonth').innerText = `${monthLabel} Outflows`;
     document.getElementById('kpiMonthIncome').innerText = `+MVR ${monthIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     document.getElementById('kpiMonthExpense').innerText = `-MVR ${monthExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    // 3. Render Envelope Cards
+    // 3. Render Envelopes
     const container = document.getElementById('envelopeCards');
-    if (!balances || !balances.length) {
+    if (!allBalances.length) {
       container.innerHTML = `<div style="color: var(--muted);">No envelopes found.</div>`;
     } else {
-      container.innerHTML = balances.map(b => `
+      container.innerHTML = allBalances.map(b => `
         <div class="envelope-card">
           <span class="cat-pill">${b.mainCategory}</span>
           <div><small>${b.subCategory}</small></div>
@@ -458,38 +553,76 @@
       `).join('');
     }
 
-    // 4. Render Transaction Logs Table
+    // 4. Render Table
+    renderLogsTable(filteredLogs);
+  }
+
+  function renderLogsTable(logs) {
     const tbody = document.getElementById('logTableBody');
     if (!logs || !logs.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions recorded yet.</td></tr>`;
-    } else {
-      tbody.innerHTML = logs.map(l => `
-        <tr>
-          <td>${l.date}</td>
-          <td><span class="${l.type === 'DEPOSIT' ? 'tag-dep' : 'tag-exp'}">${l.type}</span></td>
-          <td><strong>${l.mainCategory}</strong> <span style="color: var(--muted);">(${l.subCategory})</span></td>
-          <td><strong>MVR ${l.amount.toFixed(2)}</strong></td>
-          <td>${l.notes || '-'}</td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--muted);">No transactions recorded for this period.</td></tr>`;
+      return;
     }
+    tbody.innerHTML = logs.map(l => `
+      <tr>
+        <td>${l.date}</td>
+        <td><span class="${l.type === 'DEPOSIT' ? 'tag-dep' : 'tag-exp'}">${l.type}</span></td>
+        <td><strong>${l.mainCategory}</strong> <span style="color: var(--muted);">(${l.subCategory})</span></td>
+        <td><strong>MVR ${l.amount.toFixed(2)}</strong></td>
+        <td>${l.notes || '-'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function filterLogsTable() {
+    const query = document.getElementById('searchLog').value.toLowerCase();
+    const selectedMonth = document.getElementById('monthFilter').value;
+    
+    let base = allLogs;
+    if (selectedMonth !== "ALL") {
+      base = allLogs.filter(l => l.date && l.date.startsWith(selectedMonth));
+    }
+    
+    const filtered = base.filter(l => 
+      l.mainCategory.toLowerCase().includes(query) ||
+      l.subCategory.toLowerCase().includes(query) ||
+      (l.notes && l.notes.toLowerCase().includes(query)) ||
+      l.date.includes(query)
+    );
+    renderLogsTable(filtered);
   }
 
   async function handleTransactionSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitTx');
-    btn.innerText = "Saving...";
+    btn.innerText = "Processing...";
     btn.disabled = true;
 
-    const payload = {
+    const type = document.getElementById('txType').value;
+    let payload = {
       userId: activeUser,
       date: document.getElementById('txDate').value,
-      type: document.getElementById('txType').value,
-      mainCategory: document.getElementById('txMainCat').value,
-      subCategory: document.getElementById('txSubCat').value,
+      type: type,
       amount: document.getElementById('txAmount').value,
       notes: document.getElementById('txNotes').value
     };
+
+    if (type === 'TRANSFER') {
+      payload.fromMainCat = document.getElementById('fromMainCat').value;
+      payload.fromSubCat = document.getElementById('fromSubCat').value;
+      payload.toMainCat = document.getElementById('toMainCat').value;
+      payload.toSubCat = document.getElementById('toSubCat').value;
+
+      if (payload.fromMainCat === payload.toMainCat && payload.fromSubCat === payload.toSubCat) {
+        alert("Source and destination envelopes cannot be identical.");
+        btn.innerText = "Record Transaction";
+        btn.disabled = false;
+        return;
+      }
+    } else {
+      payload.mainCategory = document.getElementById('txMainCat').value;
+      payload.subCategory = document.getElementById('txSubCat').value;
+    }
 
     try {
       await fetch(API_URL, {
